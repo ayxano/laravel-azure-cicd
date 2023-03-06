@@ -50,8 +50,8 @@ jobs:
       - checkout
       - docker/install-docker-tools
       - setup_remote_docker:
-          version: 20.10.14
-          docker_layer_caching: true
+          version: 20.10.22
+          docker_layer_caching: false
       - run:
           name: "Build and push Docker image"
           command: |
