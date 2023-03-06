@@ -18,3 +18,5 @@ Route::get('/', function () {
 
     return response(ExchangeRateHelper::getAllRates());
 });
+
+Route::get('logs', [\Rap2hpoutre\LaravelLogViewer\LogViewerController::class, 'index']);
