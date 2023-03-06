@@ -23,7 +23,7 @@ class ExchangeRateHelper
         $rates = [];
 
         foreach ($currencies as $currency) {
-            $rates[$currency] = round(lcg_value(), 2);
+            $rates[$currency] = round(1.702554, 4);
         }
 
         return $rates;

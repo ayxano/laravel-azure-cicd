@@ -1,13 +1,12 @@
 version: 2.1
 orbs:
-  azure-cli: circleci/azure-cli@1.2.1
+  docker: circleci/docker@2.1.2
 jobs:
-  build:
+  build-and-test:
     description: Setup laravel application and run tests
-    working_directory: ~/project
     docker:
       # Specify the version you desire here
-      - image: cimg/php:8.0
+      - image: cimg/php:8.1-browsers
 
     steps:
       - checkout
@@ -36,44 +35,34 @@ jobs:
       - run:
           name: "Create .env file and generate app key"
           command: |
-            cp .env.example .env
+            mv .env.example .env
             php artisan key:generate
+
       - run:
           name: "Run tests"
           command: php vendor/bin/phpunit
-      - persist_to_workspace:
-          root: ~/project
-          paths:
-            - .
 
-  login-to-azure-and-deploy:
-    executor: azure-cli/default
+  build-docker-image:
+    executor:
+      name: docker/docker
+      tag: "3.6"
     steps:
-      - azure-cli/install
-      - azure-cli/login-with-user:
-          alternate-tenant: false
-      - attach_workspace:
-          at: ~/project
+      - checkout
+      - docker/install-docker-tools
+      - setup_remote_docker:
+          version: 20.10.14
+          docker_layer_caching: true
       - run:
-          command: az webapp deployment source show --resource-group demoApp --name laravel-azure-api
-      - run:
-          name: "Deploy Web App to Azure"
+          name: "Build and push Docker image"
           command: |
-            az webapp deployment source config-local-git --resource-group demoApp --name laravel-azure-api
-            ls
-            rm -rf .git
-            git init
-            git config --global user.email "me@mail.com"
-            git config --global user.name "yemiwebby"
-            git add .
-            git commit -m "New update"
-            git remote add azure https://$GIT_USERNAME:$GIT_PASSWORD@laravel-azure-api.scm.azurewebsites.net/laravel-azure-api.git
-            git remote show
-            git push azure master --force
+            docker build -t laravelapiaykhan.azurecr.io/laravelapiaykhan:latest .
+            docker login -u $DOCKER_USER -p $DOCKER_PASS laravelapiaykhan.azurecr.io
+            docker push laravelapiaykhan.azurecr.io/laravelapiaykhan:latest
+
 workflows:
-  build-and-deploy:
+  test-and-deploy:
     jobs:
-      - build
-      - login-to-azure-and-deploy:
+      - build-and-test
+      - build-docker-image:
           requires:
-            - build
+            - build-and-test
